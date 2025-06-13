@@ -1,4 +1,5 @@
 import torch
+from PIL import mageDraw, ImageFont
 import numpy as np
 import time
 from diffusers import DiffusionPipeline
@@ -28,7 +29,8 @@ class DependencyParsing():
         # pip install spacy
         # python -m spacy download en_core_web_sm
         import spacy
-        self.nlp = spacy.load("en_core_web_sm")
+        # self.nlp = spacy.load("en_core_web_sm")
+        self.nlp = spacy.load("/usr/local/lib/python3.10/site-packages/en_core_web_sm/en_core_web_sm-3.8.0")
 
     def parse(self, text):
         doc = self.nlp(text)
@@ -59,7 +61,6 @@ class LaRender():
             if "attn2" in name and module.__class__.__name__ == "Attention":
                 module.forward = self.create_larender_forward(module)
 
-    
     def _memory_efficient_attention_xformers(self, module, query, key, value):
         query = query.contiguous()
         key = key.contiguous()
@@ -80,7 +81,6 @@ class LaRender():
         hidden_states = module.to_out[0](hidden_states)
         hidden_states = module.to_out[1](hidden_states)
         return hidden_states
-
 
     def _get_attention_weights(self, module,hidden_states,encoder_hidden_states):
         query = module.to_q(hidden_states)
@@ -199,7 +199,6 @@ class LaRender():
                 do_classifier_free_guidance=True,
                 negative_prompt=negative_prompt,
             )
-            # pdb.set_trace()
             prompt_embeds_list.append(prompt_embeds)
             negative_prompt_embeds_list.append(negative_prompt_embeds)
             pooled_prompt_embeds_list.append(pooled_prompt_embeds)
@@ -207,19 +206,19 @@ class LaRender():
 
         prompt_embeds = torch.cat(prompt_embeds_list, dim=1)
         negative_prompt_embeds = torch.cat(negative_prompt_embeds_list, dim=1)
-        # pooled_prompt_embeds = sum(pooled_prompt_embeds_list) / len(pooled_prompt_embeds)
-        # negative_pooled_prompt_embeds = sum(negative_pooled_prompt_embeds_list) / len(negative_pooled_prompt_embeds)
+        pooled_prompt_embeds = sum(pooled_prompt_embeds_list) / len(pooled_prompt_embeds)
+        negative_pooled_prompt_embeds = sum(negative_pooled_prompt_embeds_list) / len(negative_pooled_prompt_embeds)
 
-        # (
-        # _,
-        # _,
-        # pooled_prompt_embeds,
-        # negative_pooled_prompt_embeds,
-        # ) = pipe.encode_prompt(
-        #     prompt=', '.join([background] + objects),
-        #     do_classifier_free_guidance=True,
-        #     negative_prompt=negative_prompt,
-        # )
+        (
+        _,
+        _,
+        pooled_prompt_embeds,
+        negative_pooled_prompt_embeds,
+        ) = self.pipe.encode_prompt(
+            prompt=', '.join(objects),
+            do_classifier_free_guidance=True,
+            negative_prompt=negative_prompt,
+        )
         return prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds
 
     def run(self, objects, locations, alpha, indices, height, width, negative_prompt, seed):
@@ -277,7 +276,7 @@ def repeat_div(x,y):
 
 def main():
     negative_prompt = ''
-    use_attn_map = True
+    use_attn_map = False
 
     save_name = 'refactor'
     objects= ["a large empty living room", "a piano", "a giraffe",  "a sofa",'many cats',"a blue teddy bear"]
@@ -286,8 +285,8 @@ def main():
     seed = 82
 
     save_name = 'improve'
-    objects = ['forest', 'a cat', 'a dog', 'a branch']
-    locations = [[0, 1, 0, 1], [0.4, 0.8, 0.1, 0.4], [0.3, 0.9, 0.5, 0.7], [0.4, 0.5, 0, 1]]
+    objects = ['forest, a cat, a dog, a branch', 'a cat', 'a dog', 'a branch']
+    locations = [[0, 1, 0, 1], [0.3, 0.8, 0.1, 0.4], [0.3, 0.9, 0.5, 0.7], [0.4, 0.5, 0, 1]]
     alpha = [0.6, 0.6, 0.6, 0.6]
     seed = 5
     
@@ -311,6 +310,17 @@ def main():
     save_fn = f"results/{save_name}/{save_name}_{seed:03d}_{alpha[-1]:.3f}.png"
     print(f'Save at: {save_fn}')
     images.save(save_fn)
+
+    if True:
+        draw = ImageDraw.Draw(images)
+        width, height = images.width, images.height
+        for obj, loc in zip(objects, locations):
+            draw.rectangle((loc[2] * width, loc[0] * height, loc[3] * width, loc[1] * height), outline='red', width=2)
+            font = ImageFont.load_default(size=32)
+            text_position = (loc[1] * width + 1, loc[0] * height + 1)
+            draw.text(text_position, obj, font=font, fill="red")  # Text
+        images.save(f"result/{save_name}/{save_name}_box_{seed:03d}_{alpha[-1]:.3f}.png")
+
 
 if __name__ == '__main__':
     main()
