@@ -110,5 +110,5 @@ datasets/
 .idea/
 __MACOSX/
 
-
+.DS_Store
 results/
