@@ -5,7 +5,7 @@ This repository is the official implementation of our [LaRender](https://xiaohan
 > [**LaRender: Training-Free Occlusion Control in Image Generation via Latent Rendering**](https://xiaohangzhan.github.io/projects/larender/)
 
 > [Xiaohang Zhan](https://xiaohangzhan.github.io/), 
-> Dingming Liu
+> [Dingming Liu](https://scholar.google.com/citations?user=C0ubzjQAAAAJ)
 > <br>**Tencent**<br>
 
 > Project page: https://xiaohangzhan.github.io/projects/larender/
