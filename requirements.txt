@@ -2,3 +2,5 @@ torch
 torchvision
 diffusers
 spacy
+xformers
+transformers==4.49
